@@ -1,0 +1,21 @@
+{
+    "files.associations": {
+        "wait.h": "c",
+        "string.h": "c",
+        "types.h": "c",
+        "signal.h": "c",
+        "struct_timespec.h": "c",
+        "stdio.h": "c",
+        "prompt.h": "c",
+        "internal_commands.h": "c",
+        "fcntl.h": "c",
+        "shell.h": "c",
+        "batch_file.h": "c",
+        "unity.h": "c",
+        "commands.h": "c",
+        "stdlib.h": "c",
+        "signals.h": "c",
+        "monitor.h": "c",
+        "unistd.h": "c"
+    }
+}

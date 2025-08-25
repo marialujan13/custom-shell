@@ -1,0 +1,11 @@
+ls
+cd ..
+ls
+echo hola $SHELL
+pwd
+mkdir test_directory
+cd test_directory
+touch test_file.txt
+echo This is a test file
+cat test_file.txt
+rm test_file.txt

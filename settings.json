@@ -1,0 +1,9 @@
+{
+    "sampling_interval": 5,
+    "collect_cpu": true,
+    "collect_memory": true,
+    "collect_disk": true,
+    "collect_network": false
+}
+
+
