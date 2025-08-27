@@ -29,7 +29,7 @@
  * @brief Color codes for the terminal.
  * @details These color codes are used to print the metrics in a pretty way.
  */
-#define COLOR_TITLE "\033[1;34m" // Azul
+#define COLOR_TITLE "\033[38;5;197m" // Rosa
 
 /**
  * @brief Color codes for the terminal.

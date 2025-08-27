@@ -1,8 +1,14 @@
-
 #include "shell.h"
+
+#define COLOR_RESET     "\033[0m"
+#define COLOR_GREEN     "\033[38;5;159m"
+#define COLOR_BOLD      "\033[1m"
+#define COLOR_MAGENTA   "\033[38;5;168m"
+#define COLOR_ORANGE    "\033[38;5;166m"
 
 #define HOSTNAME_BUFFER_SIZE 1024
 #define CWD_BUFFER_SIZE 1024
+
 /*
  * @brief This function displays the prompt.
  * @details This function displays the prompt with the user, hostname, and current working directory.
@@ -24,8 +30,11 @@ void display_prompt(void)
         perror("getcwd");
         exit(EXIT_FAILURE);
     }
+    printf("%s%s%s%s@%s%s%s%s:%s%s%s%s$ ", 
+           COLOR_BOLD, COLOR_GREEN, pw->pw_name, COLOR_RESET,    // usuario en rosa negrita
+           COLOR_BOLD, COLOR_GREEN, hostname, COLOR_RESET,       // hostname en rosa negrita
+           COLOR_BOLD, COLOR_ORANGE, cwd, COLOR_RESET);                          // directorio en cyan
 
-    printf("She'll: %s@%s:%s$ ", pw->pw_name, hostname, cwd);
 }
 
 /*

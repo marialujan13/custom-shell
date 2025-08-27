@@ -111,7 +111,7 @@ void execute_command(const char* cmd)
     //-------COMANDOS INTERNOS-------//
 
     if (strcmp(args[0], "cd") == 0 || strcmp(args[0], "clr") == 0 || strcmp(args[0], "echo") == 0 ||
-        strcmp(args[0], "quit") == 0 || strcmp(args[0], "start_monitor") == 0 || strcmp(args[0], "stop_monitor") == 0 ||
+        strcmp(args[0], "quit") == 0 || strcmp(args[0], "find_config") == 0 || strcmp(args[0], "start_monitor") == 0 || strcmp(args[0], "stop_monitor") == 0 ||
         strcmp(args[0], "status_monitor") == 0)
     {
         if (background)
@@ -162,6 +162,10 @@ void execute_command(const char* cmd)
                 else if (strcmp(args[0], "quit") == 0)
                 {
                     quit_shell();
+                }
+                else if (strcmp(args[0], "find_config") == 0)
+                {
+                    find_config_command((const char**)args);
                 }
                 else if (strcmp(args[0], "start_monitor") == 0)
                 {
@@ -231,6 +235,10 @@ void execute_command(const char* cmd)
             else if (strcmp(args[0], "quit") == 0)
             {
                 quit_shell();
+            }
+            else if (strcmp(args[0], "find_config") == 0)
+            {
+                find_config_command((const char**)args);
             }
             else if (strcmp(args[0], "start_monitor") == 0)
             {

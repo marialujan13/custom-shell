@@ -1,0 +1,2 @@
+find_config test_configs
+quit

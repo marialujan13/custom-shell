@@ -10,6 +10,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <dirent.h>
 
 /**
  * @brief This function changes the current directory.
@@ -34,3 +35,10 @@ void echo_command(const char* message[]);
  * @details This function sends a signal to the shell to quit.
  */
 void quit_shell(void);
+
+/**
+ * @brief This function searches for configuration files in a directory.
+ * @param args Array containing the directory path and optionally the file extension
+ * @details Searches recursively for configuration files with specified extension
+ */
+void find_config_command(const char* args[]);

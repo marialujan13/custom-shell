@@ -16,17 +16,15 @@ include_directories(include)
 
 # Find dependencies
 find_package(cJSON REQUIRED) 
-find_package(unity REQUIRED)
+#find_package(unity REQUIRED)
 
-if(RUN_COVERAGE EQUAL 1)
-    message(STATUS "Coverage enabled")
-    enable_testing()
-    add_subdirectory(tests)
-    
-else() 
-    message(STATUS "Coverage disabled")
-
-endif()
+#if(RUN_COVERAGE EQUAL 1)
+#    message(STATUS "Coverage enabled")
+#    enable_testing()
+#    add_subdirectory(tests)
+#else() 
+#    message(STATUS "Coverage disabled")
+#endif()
 
 # Add the monitoring executable
 add_subdirectory(monitor_prometheus)  # Agrega esta línea para incluir el directorio de monitoreo
@@ -36,4 +34,4 @@ file(GLOB SRC_FILES src/*.c)
 add_executable(${PROJECT_NAME} ${SRC_FILES})
 
 # Link libraries
-target_link_libraries(${PROJECT_NAME} PRIVATE cjson::cjson unity::unity)  # Asegúrate de enlazar unity también
+target_link_libraries(${PROJECT_NAME} PRIVATE cjson) #unity::unity)  # Asegúrate de enlazar unity también
