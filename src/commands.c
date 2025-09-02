@@ -13,7 +13,7 @@
 
 static int job_id = 1;
 
-extern pid_t foreground_pid;
+pid_t foreground_pid;
 
 extern pid_t monitor_pid;
 prom_counter_t* my_counter = NULL;
@@ -23,8 +23,7 @@ prom_counter_t* my_counter = NULL;
  *
  * @param cmd the command to execute
  */
-void execute_command(const char* cmd)
-{
+void execute_command(const char* cmd){
 
     if (cmd == NULL)
     {
@@ -111,35 +110,101 @@ void execute_command(const char* cmd)
     //-------COMANDOS INTERNOS-------//
 
     if (strcmp(args[0], "cd") == 0 || strcmp(args[0], "clr") == 0 || strcmp(args[0], "echo") == 0 ||
-        strcmp(args[0], "quit") == 0 || strcmp(args[0], "find_config") == 0 || strcmp(args[0], "start_monitor") == 0 || strcmp(args[0], "stop_monitor") == 0 ||
-        strcmp(args[0], "status_monitor") == 0)
-    {
-        if (background)
-        {
-            pid_t pid = fork();
-            if (pid < 0)
-            {
-                perror("fork error");
-            }
-            else if (pid == 0)
-            {
-                // Proceso hijo
-                // Redirecciones en el hijo
-                if (input_redirect)
+        strcmp(args[0], "quit") == 0 || strcmp(args[0], "find_config") == 0 || 
+        strcmp(args[0], "start_monitor") == 0 || strcmp(args[0], "stop_monitor") == 0 ||
+        strcmp(args[0], "status_monitor") == 0){
+            
+            if (background){
+                pid_t pid = fork();
+        
+                if (pid < 0){
+                    perror("fork error");
+                }else if (pid == 0){
+                    // Proceso hijo
+                    // Redirecciones en el hijo
+                    if (input_redirect){
+                        int fd_in = open(input_file, O_RDONLY);
+                        dup2(fd_in, STDIN_FILENO);
+                        close(fd_in);
+                    }
+                    if (output_redirect)
+                    {
+                        int fd_out = open(output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                        dup2(fd_out, STDOUT_FILENO);
+                        close(fd_out);
+                    }
+                    execvp(args[0], args);
+
+                    // Ejecutar el comando interno
+                    if (strcmp(args[0], "cd") == 0)
+                    {
+                        if (args[1] != NULL)
+                        {
+                            change_directory(args[1]);
+                        }
+                        else
+                        {
+                            change_directory(NULL); // Cambiar al directorio home
+                        }
+                    }
+                    else if (strcmp(args[0], "clr") == 0)
+                    {
+                        clear_screen();
+                    }
+                    else if (strcmp(args[0], "echo") == 0)
+                    {
+                        echo_command((const char**)args);
+                    }
+                    else if (strcmp(args[0], "quit") == 0)
+                    {
+                        quit_shell();
+                    }
+                    else if (strcmp(args[0], "find_config") == 0)
+                    {
+                        find_config_command((const char**)args);
+                    }
+                    else if (strcmp(args[0], "start_monitor") == 0)
+                    {
+                        start_monitor();
+                        return;
+                    }
+                    else if (strcmp(args[0], "stop_monitor") == 0)
+                    {
+                        stop_monitor();
+                        return;
+                    }
+                    else if (strcmp(args[0], "status_monitor") == 0)
+                    {
+                        status_monitor(); // Llamar a la función adaptada
+                        return;
+                    }
+
+                    exit(EXIT_SUCCESS);
+                }
+                else
                 {
+                    printf("[%d] %d\n", job_id++, pid);
+                }
+            }else{
+                if (input_redirect){
                     int fd_in = open(input_file, O_RDONLY);
+                    if (fd_in < 0)
+                    {
+                        perror("open input file");
+                    }
                     dup2(fd_in, STDIN_FILENO);
                     close(fd_in);
                 }
-                if (output_redirect)
-                {
+                if (output_redirect){
                     int fd_out = open(output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                    if (fd_out < 0)
+                    {
+                        perror("open output file");
+                    }
                     dup2(fd_out, STDOUT_FILENO);
                     close(fd_out);
                 }
-                execvp(args[0], args);
 
-                // Ejecutar el comando interno
                 if (strcmp(args[0], "cd") == 0)
                 {
                     if (args[1] != NULL)
@@ -179,189 +244,218 @@ void execute_command(const char* cmd)
                 }
                 else if (strcmp(args[0], "status_monitor") == 0)
                 {
+
                     status_monitor(); // Llamar a la función adaptada
                     return;
                 }
-
-                exit(EXIT_SUCCESS);
-            }
-            else
-            {
-                printf("[%d] %d\n", job_id++, pid);
-            }
-        }
-        else
-        {
-            if (input_redirect)
-            {
-                int fd_in = open(input_file, O_RDONLY);
-                if (fd_in < 0)
+                // Restaura la salida estándar
+                if (output_redirect)
                 {
-                    perror("open input file");
+                    fflush(stdout);
+                    dup2(saved_stdout, STDOUT_FILENO);
+                    close(saved_stdout);
                 }
-                dup2(fd_in, STDIN_FILENO);
-                close(fd_in);
-            }
-            if (output_redirect)
-            {
-                int fd_out = open(output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-                if (fd_out < 0)
+                if (input_redirect)
                 {
-                    perror("open output file");
+                    dup2(saved_stdin, STDIN_FILENO);
+                    close(saved_stdin);
                 }
-                dup2(fd_out, STDOUT_FILENO);
-                close(fd_out);
-            }
-
-            if (strcmp(args[0], "cd") == 0)
-            {
-                if (args[1] != NULL)
-                {
-                    change_directory(args[1]);
-                }
-                else
-                {
-                    change_directory(NULL); // Cambiar al directorio home
-                }
-            }
-            else if (strcmp(args[0], "clr") == 0)
-            {
-                clear_screen();
-            }
-            else if (strcmp(args[0], "echo") == 0)
-            {
-                echo_command((const char**)args);
-            }
-            else if (strcmp(args[0], "quit") == 0)
-            {
-                quit_shell();
-            }
-            else if (strcmp(args[0], "find_config") == 0)
-            {
-                find_config_command((const char**)args);
-            }
-            else if (strcmp(args[0], "start_monitor") == 0)
-            {
-                start_monitor();
                 return;
             }
-            else if (strcmp(args[0], "stop_monitor") == 0)
-            {
-                stop_monitor();
-                return;
-            }
-            else if (strcmp(args[0], "status_monitor") == 0)
-            {
 
-                status_monitor(); // Llamar a la función adaptada
-                return;
+            // Ejecutar cada comando en un proceso hijo
+            for (int j = 0; j < num_commands; j++)
+            {
+                pid_t pid = fork();
+                if (pid < 0)
+                {
+                    perror("fork error");
+                    return;
+                }
+                else if (pid == 0)
+                {
+                    // Proceso hijo
+                    if (j > 0)
+                    {
+                        // Redirigir la entrada estándar al extremo de lectura del pipe anterior
+                        dup2(pipes[j - 1][0], STDIN_FILENO);
+                    }
+                    if (j < num_commands - 1)
+                    {
+                        // Redirigir la salida estándar al extremo de escritura del pipe actual
+                        dup2(pipes[j][1], STDOUT_FILENO);
+                    }
+
+                    // Cerrar todos los pipes en el proceso hijo
+                    for (int k = 0; k < num_commands - 1; k++)
+                    {
+                        close(pipes[k][0]);
+                        close(pipes[k][1]);
+                    }
+
+                    // Tokenizar el comando en base a los espacios
+                    char* cmd_args[MAX_COMMAND_LENGTH];
+                    int k = 0;
+                    char* cmd_token = strtok(commands[j], " ");
+                    while (cmd_token != NULL && k < MAX_COMMAND_LENGTH)
+                    {
+                        cmd_args[k++] = cmd_token;
+                        cmd_token = strtok(NULL, " ");
+                    }
+                    cmd_args[k] = NULL; // Terminar el arreglo con NULL para las funciones que lo requieran
+
+                    // Redirigir la entrada y salida estándar si es necesario
+                    if (input_redirect)
+                    {
+                        int fd_in = open(input_file, O_RDONLY);
+                        if (fd_in < 0)
+                        {
+                            perror("open input file");
+                            exit(EXIT_FAILURE);
+                        }
+                        dup2(fd_in, STDIN_FILENO);
+                        close(fd_in);
+                    }
+                    if (output_redirect)
+                    {
+                        int fd_out = open(output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                        if (fd_out < 0)
+                        {
+                            perror("open output file");
+                            exit(EXIT_FAILURE);
+                        }
+                        dup2(fd_out, STDOUT_FILENO);
+                        close(fd_out);
+                    }
+
+                    // Ejecutar el comando
+                    execvp(cmd_args[0], cmd_args);
+                    perror("execvp error");
+                    exit(EXIT_FAILURE);
+                }
             }
-            // Restaura la salida estándar
+
+            // Cerrar todos los pipes en el proceso padre
+            for (int j = 0; j < num_commands - 1; j++)
+            {
+                close(pipes[j][0]);
+                close(pipes[j][1]);
+            }
+
+            // Esperar a que todos los procesos hijos terminen
+            for (int j = 0; j < num_commands; j++)
+            {
+                int status;
+                wait(&status);
+            }
+
+            // Restaurar la salida estándar si se redirigió
             if (output_redirect)
             {
                 fflush(stdout);
-                dup2(saved_stdout, STDOUT_FILENO);
-                close(saved_stdout);
+                dup2(STDOUT_FILENO, fileno(stdout));
             }
-            if (input_redirect)
-            {
-                dup2(saved_stdin, STDIN_FILENO);
-                close(saved_stdin);
-            }
-            return;
-        }
-
-        // Ejecutar cada comando en un proceso hijo
-        for (int j = 0; j < num_commands; j++)
-        {
-            pid_t pid = fork();
-            if (pid < 0)
-            {
-                perror("fork error");
-                return;
-            }
-            else if (pid == 0)
-            {
-                // Proceso hijo
-                if (j > 0)
+        }else{
+            //---------------COMANDOS EXTERNOS---------------//
+            if (background){
+                pid_t pid = fork();
+                if (pid < 0)
                 {
-                    // Redirigir la entrada estándar al extremo de lectura del pipe anterior
-                    dup2(pipes[j - 1][0], STDIN_FILENO);
+                    perror("fork error");
                 }
-                if (j < num_commands - 1)
+                else if (pid == 0)
                 {
-                    // Redirigir la salida estándar al extremo de escritura del pipe actual
-                    dup2(pipes[j][1], STDOUT_FILENO);
-                }
-
-                // Cerrar todos los pipes en el proceso hijo
-                for (int k = 0; k < num_commands - 1; k++)
-                {
-                    close(pipes[k][0]);
-                    close(pipes[k][1]);
-                }
-
-                // Tokenizar el comando en base a los espacios
-                char* cmd_args[MAX_COMMAND_LENGTH];
-                int k = 0;
-                char* cmd_token = strtok(commands[j], " ");
-                while (cmd_token != NULL && k < MAX_COMMAND_LENGTH)
-                {
-                    cmd_args[k++] = cmd_token;
-                    cmd_token = strtok(NULL, " ");
-                }
-                cmd_args[k] = NULL; // Terminar el arreglo con NULL para las funciones que lo requieran
-
-                // Redirigir la entrada y salida estándar si es necesario
-                if (input_redirect)
-                {
-                    int fd_in = open(input_file, O_RDONLY);
-                    if (fd_in < 0)
+                    // Proceso hijo para comando en background
+                    if (input_redirect)
                     {
-                        perror("open input file");
-                        exit(EXIT_FAILURE);
+                        int fd_in = open(input_file, O_RDONLY);
+                        if (fd_in < 0)
+                        {
+                            perror("open input file");
+                            exit(EXIT_FAILURE);
+                        }
+                        dup2(fd_in, STDIN_FILENO);
+                        close(fd_in);
                     }
-                    dup2(fd_in, STDIN_FILENO);
-                    close(fd_in);
-                }
-                if (output_redirect)
-                {
-                    int fd_out = open(output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-                    if (fd_out < 0)
+                    if (output_redirect)
                     {
-                        perror("open output file");
-                        exit(EXIT_FAILURE);
+                        int fd_out = open(output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                        if (fd_out < 0)
+                        {
+                            perror("open output file");
+                            exit(EXIT_FAILURE);
+                        }
+                        dup2(fd_out, STDOUT_FILENO);
+                        close(fd_out);
                     }
-                    dup2(fd_out, STDOUT_FILENO);
-                    close(fd_out);
+                    
+                    execvp(args[0], args);
+                    perror("execvp error");
+                    exit(EXIT_FAILURE);
                 }
+                else
+                {
+                    printf("[%d] %d\n", job_id++, pid);
+                }
+            }else{
 
-                // Ejecutar el comando
-                execvp(cmd_args[0], cmd_args);
-                perror("execvp error");
-                exit(EXIT_FAILURE);
+                // Ejecutar comando externo en foreground
+                pid_t pid = fork();
+                if (pid < 0)
+                {
+                    perror("fork error");
+                    return;
+                }
+                else if (pid == 0)
+                {
+                    // Proceso hijo
+                    if (input_redirect)
+                    {
+                        int fd_in = open(input_file, O_RDONLY);
+                        if (fd_in < 0)
+                        {
+                            perror("open input file");
+                            exit(EXIT_FAILURE);
+                        }
+                        dup2(fd_in, STDIN_FILENO);
+                        close(fd_in);
+                    }
+                    if (output_redirect)
+                    {
+                        int fd_out = open(output_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                        if (fd_out < 0)
+                        {
+                            perror("open output file");
+                            exit(EXIT_FAILURE);
+                        }
+                        dup2(fd_out, STDOUT_FILENO);
+                        close(fd_out);
+                    }
+                    
+                    execvp(args[0], args);
+                    perror("execvp error");
+                    exit(EXIT_FAILURE);
+                }
+                else
+                {
+                    // Proceso padre espera al hijo
+                    int status;
+                    foreground_pid = pid;
+                    waitpid(pid, &status, 0);
+                    foreground_pid = 0;
+                }
             }
         }
-
-        // Cerrar todos los pipes en el proceso padre
-        for (int j = 0; j < num_commands - 1; j++)
-        {
-            close(pipes[j][0]);
-            close(pipes[j][1]);
-        }
-
-        // Esperar a que todos los procesos hijos terminen
-        for (int j = 0; j < num_commands; j++)
-        {
-            int status;
-            wait(&status);
-        }
-
-        // Restaurar la salida estándar si se redirigió
+        // Restaurar descriptores de archivo
         if (output_redirect)
         {
             fflush(stdout);
-            dup2(STDOUT_FILENO, fileno(stdout));
+            dup2(saved_stdout, STDOUT_FILENO);
+            close(saved_stdout);
         }
-    }
+        if (input_redirect)
+        {
+            dup2(saved_stdin, STDIN_FILENO);
+            close(saved_stdin);
+        }
 }

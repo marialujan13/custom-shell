@@ -9,6 +9,9 @@
  */
 pid_t monitor_pid = -1; // PID del monitor
 
+// Definir el path del ejecutable como constante
+#define METRICS_EXECUTABLE "/home/lujan/SO1/so-i-24-chp3-marialujan13/build/bin/metrics"
+
 /**
  * @brief This function starts the Prometheus monitor.
  */
@@ -24,8 +27,9 @@ void start_monitor()
     monitor_pid = fork();
     if (monitor_pid == 0)
     {
+        
         // Este es el proceso hijo
-        execl("bin/metrics", "bin/metrics", NULL); // Ejecutar el programa de monitoreo
+        execl(METRICS_EXECUTABLE, "metrics", NULL); // Ejecutar el programa de monitoreo
         perror("Error al iniciar el monitor");     // Imprimir un mensaje de error si execl() falla
         exit(EXIT_FAILURE);
     }
@@ -67,7 +71,7 @@ void stop_monitor()
 void status_monitor(void)
 {
     // Cargar "settings.json"
-    cJSON* settings = cargar_settings("../settings.json");
+    cJSON* settings = cargar_settings("/home/lujan/SO1/so-i-24-chp3-marialujan13/custom-shell/settings.json");
 
     // Procesar la FIFO con las configuraciones cargadas
     printf("Cargando estadisticas...\n");
@@ -190,8 +194,8 @@ cJSON* filtrar_metricas(cJSON* metricas, cJSON* settings)
 
     if (cJSON_IsTrue(cJSON_GetObjectItem(settings, "collect_disk")))
     {
-        cJSON_AddItemToObject(filtrado, "disk_reads", cJSON_Duplicate(cJSON_GetObjectItem(metricas, "disk_reads"), 1));
-        cJSON_AddItemToObject(filtrado, "disk_writes",
+        cJSON_AddItemToObject(filtrado, "disk_reads_bytes", cJSON_Duplicate(cJSON_GetObjectItem(metricas, "disk_reads"), 1));
+        cJSON_AddItemToObject(filtrado, "disk_writes_bytes",
                               cJSON_Duplicate(cJSON_GetObjectItem(metricas, "disk_writes"), 1));
         cJSON_AddItemToObject(filtrado, "disk_read_time_seconds",
                               cJSON_Duplicate(cJSON_GetObjectItem(metricas, "disk_read_time_seconds"), 1));
@@ -217,6 +221,23 @@ cJSON* filtrar_metricas(cJSON* metricas, cJSON* settings)
                               cJSON_Duplicate(cJSON_GetObjectItem(metricas, "context_switches_total"), 1));
     }
 
+    // AGREGAR: Métricas de memoria personalizada
+    if (cJSON_IsTrue(cJSON_GetObjectItem(settings, "collect_custom_memory")))
+    {
+        cJSON_AddItemToObject(filtrado, "custom_memory_allocated_bytes",
+                              cJSON_Duplicate(cJSON_GetObjectItem(metricas, "custom_memory_allocated_bytes"), 1));
+        cJSON_AddItemToObject(filtrado, "custom_memory_free_bytes",
+                              cJSON_Duplicate(cJSON_GetObjectItem(metricas, "custom_memory_free_bytes"), 1));
+        cJSON_AddItemToObject(filtrado, "custom_memory_fragmentation_percentage",
+                              cJSON_Duplicate(cJSON_GetObjectItem(metricas, "custom_memory_fragmentation_percentage"), 1));
+        cJSON_AddItemToObject(filtrado, "custom_memory_largest_free_block_bytes",
+                              cJSON_Duplicate(cJSON_GetObjectItem(metricas, "custom_memory_largest_free_block_bytes"), 1));
+        cJSON_AddItemToObject(filtrado, "custom_memory_policy",
+                              cJSON_Duplicate(cJSON_GetObjectItem(metricas, "custom_memory_policy"), 1));
+        cJSON_AddItemToObject(filtrado, "custom_memory_efficiency_ratio",
+                              cJSON_Duplicate(cJSON_GetObjectItem(metricas, "custom_memory_efficiency_ratio"), 1));
+    }
+
     return filtrado;
 }
 
@@ -232,7 +253,7 @@ void imprimir_metricas(cJSON* filtrado)
     {
         const char* key = item->string;
         const char* value = cJSON_PrintUnformatted(item);
-        printf(COLOR_KEY "%-25s: " COLOR_VALUE "%s\n" COLOR_RESET, key, value);
+        printf(COLOR_KEY "%-40s: " COLOR_VALUE "%s\n" COLOR_RESET, key, value);
         free((void*)value);
     }
     printf("\n");
