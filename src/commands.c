@@ -18,7 +18,7 @@ pid_t foreground_pid;
 extern pid_t monitor_pid;
 prom_counter_t* my_counter = NULL;
 
-/*
+/**
  * @brief This function executes the command.
  *
  * @param cmd the command to execute
